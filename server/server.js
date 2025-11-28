@@ -4,11 +4,22 @@ import cors from 'cors';
 import 'dotenv/config';
 import connectDB from './config/db.js';
 import * as Sentry from "@sentry/node";
-import {clerkwebhooks} from './controllers/webhooks.js'
+import { clerkwebhooks } from './controllers/webhooks.js';
 import multer from 'multer';
-import { getUserProfile, updateUserProfile, uploadResume, applyForJob, getUserApplications } from './controllers/userController.js';
+import { 
+    getUserProfile, 
+    updateUserProfile, 
+    uploadResume, 
+    applyForJob, 
+    getUserApplications 
+} from './controllers/userController.js';
 import { getAllJobs, getJob, createJob } from './controllers/jobController.js';
 import { registerRecruiter, loginRecruiter } from './controllers/recruiterController.js';
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 //initialize express
 const app = express();
@@ -19,7 +30,7 @@ await connectDB();
 // Configure multer for temporary file storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Temporary storage folder
+        cb(null, 'uploads/'); 
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname);
@@ -28,7 +39,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: function (req, file, cb) {
         if (file.mimetype === 'application/pdf') {
             cb(null, true);
@@ -38,10 +49,9 @@ const upload = multer({
     }
 });
 
-// Separate multer instance for image uploads (recruiter logos)
 const uploadImage = multer({ 
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: function (req, file, cb) {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -53,7 +63,7 @@ const uploadImage = multer({
 
 //middlewares
 app.use(cors());
-app.use(express.json())
+app.use(express.json());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -65,18 +75,14 @@ app.use((req, res, next) => {
 });
 
 //Routes
-app.get("/",(req,res)=>res.send("API WORKING"));
-app.get("/debug-sentry", function mainHandler(req, res) {
-  throw new Error("My first Sentry error!");
-});
+app.get("/", (req, res) => res.send("API WORKING"));
 
-// Test endpoint to check request data
 app.post('/api/test', (req, res) => {
-  console.log('Test endpoint hit:', req.body);
-  res.json({ success: true, received: req.body });
+    console.log('Test endpoint hit:', req.body);
+    res.json({ success: true, received: req.body });
 });
 
-app.post('/webhooks',clerkwebhooks)
+app.post('/webhooks', clerkwebhooks);
 
 // User routes
 app.post('/api/user/profile', getUserProfile);
@@ -94,10 +100,21 @@ app.get('/api/jobs', getAllJobs);
 app.get('/api/jobs/:id', getJob);
 app.post('/api/jobs/create', createJob);
 
+// ------------------------------
+// 📌 SERVE REACT BUILD (PRODUCTION)
+// ------------------------------
+
+const buildPath = path.join(__dirname, "../client/build");
+app.use(express.static(buildPath));
+
+app.get("*", (req, res) => {
+    res.sendFile(path.join(buildPath, "index.html"));
+});
+
 //PORT
 const PORT = process.env.PORT || 5000;
 Sentry.setupExpressErrorHandler(app);
 
-app.listen(PORT,()=>{
+app.listen(PORT, () => {
     console.log(`Server is running on PORT ${PORT}`);
-})
+});
