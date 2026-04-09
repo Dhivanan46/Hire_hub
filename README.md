@@ -1,4 +1,4 @@
-# 💼 HireHub Project
+# 💼 HireHub Project Live : http://13.204.233.7
 
 A full-stack HireHub web application that connects job seekers with recruiters. Users can register, log in, search and apply for jobs, while recruiters can post, manage, and review job applications.
 
